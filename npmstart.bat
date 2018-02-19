@@ -1,0 +1,1 @@
+cd C:\Users\ferdi\Documents\Projects\myfirstbackend & set DEBUG=myfirstbackend:* & npm start
