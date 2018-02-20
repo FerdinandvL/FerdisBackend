@@ -26,16 +26,63 @@ var db = new sqlite3.Database('./databases/herzberg.db');
 
 
 hplcRouter.get('/', (req, res, next) => {
-    db.all("SELECT * FROM hplc ORDER BY id", function(error, rows){
-        let responseJson = {
-            title: 'Response to GET Request',
-            calledURL: 'http://localhost:3000/hplc',
-            result: rows
-        };
-        console.log(responseJson)
-        res.send(responseJson)
+    db.all("PRAGMA table_info(hplc);", function(error, columns){
+        db.all("SELECT * FROM hplc", function(error, rows){
+            let queryResult = {
+                title: 'Response to GET Request',
+                calledURL: 'http://localhost:3000/hplc',
+                columnMeta: columns,
+                rows: rows,
+            };
+            let resultArray = [];
+            rows.forEach(row => {
+                let rowValues = [];
+                let rowFeatures = []
+                let featureMeasure = '';
+                let featureUnit = 'min';
+                let metaObject = {};
+                let rowData = [];
+                columns.forEach( column => {
+                    if(column["type"] === "FLOAT" ){
+                        //console.log('column["name"]: ', column["name"], ' -------- ','row[column["name"]]: ', row[column["name"]])
+                        //console.log('column["type"]: ', column["type"])
+                        let rowValue = row[column["name"]];
+                        let rowFeature = parseFloat(column["name"].slice(3).replace("_", "."));
+                        rowValues.push( rowValue )
+                        rowFeatures.push( rowFeature )
+                        featureMeasure = column["name"].slice(0, 2)
+                        rowData.push( [ rowFeature, rowValue ] )
+                    } else {
+                        metaObject = Object.assign(metaObject, {
+                            [column["name"]]: row[column["name"]], 
+                        })
+                    }
+
+                })
+                resultArray.push({
+                    rowMeta: metaObject,
+                    //rowFeatures: rowFeatures,
+                    featureMeasure: featureMeasure,
+                    units: ['min', 'peakArea'],
+                    //rowValues: rowValues,
+                    rowData: rowData,
+                })
+                    
+            });
+
+            
+            responseJson = {
+                title: 'Response to GET Request',
+                calledURL: 'http://localhost:3000/hplc',
+                data: resultArray,
+            }
+
+            console.log(responseJson)
+            res.send(responseJson)
+        })
     })
 } )
+
 /* GET clicks listing. */
 //router.get('/', function(req, res, next) {
 //    //db.get("SELECT * FROM ferdi", function(err, row){
